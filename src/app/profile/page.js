@@ -2,11 +2,27 @@
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
 
 export default function ProfilePage() {
   const session = useSession();
+  const [userName, setUserName] = useState("");
   const { status } = session;
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      setUserName(session.data.user.name);
+    }
+  }, [session, status]);
+
+  async function handleProfileInfoUpdate(ev) {
+    ev.preventDefault();
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: userName }),
+    });
+  }
   if (status === "login") {
     return "Loading...";
   }
@@ -20,7 +36,7 @@ export default function ProfilePage() {
   return (
     <section className="mt-8">
       <h1 className="text-center text-primary text-4xl mb-4">Profile</h1>
-      <form className="max-w-md mx-auto ">
+      <div className="max-w-md mx-auto ">
         <div className="flex gap-4 items-center ">
           <div className="">
             <div className=" rounded-lg p-2 relative">
@@ -34,12 +50,22 @@ export default function ProfilePage() {
               <button type="button">Edit</button>
             </div>
           </div>
-          <div className="grow">
-            <input type="text" placeholder="First and last name" />
+          <form className="grow" onSubmit={handleProfileInfoUpdate}>
+            <input
+              value={userName}
+              onChange={(ev) => setUserName(ev.target.value)}
+              type="text"
+              placeholder="First and last name"
+            />
+            <input
+              type="email"
+              disabled={true}
+              value={session.data?.user.email}
+            />
             <button type="submit">Save</button>
-          </div>
+          </form>
         </div>
-      </form>
+      </div>
     </section>
   );
 }
