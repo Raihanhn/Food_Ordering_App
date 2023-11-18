@@ -3,15 +3,11 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import InfoBox from "../components/layout/InfoBox";
-import SuccessBox from "../components/layout/SuccessBox";
-
+import toast from "react-hot-toast";
 export default function ProfilePage() {
   const session = useSession();
   const [userName, setUserName] = useState("");
   const { status } = session;
-  const [saved, setSaved] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -21,18 +17,22 @@ export default function ProfilePage() {
 
   async function handleProfileInfoUpdate(ev) {
     ev.preventDefault();
-    setSaved(false);
-    setIsSaving(true);
-    const response = await fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: userName }),
-    });
-    setIsSaving(false);
 
-    if (response.ok) {
-      setSaved(true);
-    }
+    const savingPromise = new Promise(async (resolve, reject) => {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: userName }),
+      });
+      if (response.ok) resolve();
+      else reject();
+    });
+
+    await toast.promise(savingPromise, {
+      loading: "Saving...",
+      success: "Profile saved!",
+      error: "Error",
+    });
   }
 
   async function handleFileChange(ev) {
@@ -62,10 +62,6 @@ export default function ProfilePage() {
       <h1 className="text-center text-primary text-4xl mb-4">Profile</h1>
 
       <div className="max-w-md mx-auto ">
-        {saved && <SuccessBox>Profile saved!</SuccessBox>}
-
-        {isSaving && <InfoBox>Saving</InfoBox>}
-
         <div className="flex gap-4 items-center ">
           <div className="">
             <div className=" rounded-lg p-2 relative max-w-[120px]">
